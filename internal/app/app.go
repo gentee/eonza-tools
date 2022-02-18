@@ -30,7 +30,7 @@ func NewApp() *App {
 		TaskPort: *portFlag,
 		Exit:     make(chan int),
 	}
-
+	log.SetFlags(0)
 	if app.TaskID == 0 || app.TaskPort == 0 {
 		log.Fatal(`undefined task id or task port`)
 	}
@@ -44,7 +44,7 @@ func NewApp() *App {
 	if body, err := LocalGet(app.TaskPort, fmt.Sprintf("pkg/%d", app.Port)); err != nil {
 		log.Fatal(err)
 	} else if StrToInt(string(body)) != app.TaskID {
-		log.Fatal(`wrong task id`)
+		log.Fatal(fmt.Sprintf(`wrong task id %d`, app.TaskID))
 	}
 
 	return &app
