@@ -7,7 +7,6 @@ package app
 import (
 	"context"
 	"fmt"
-	"html"
 	"net/http"
 	"time"
 
@@ -19,16 +18,24 @@ type Server struct {
 	Port int
 }
 
-func defaultHandle(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
-}
-
-func shutdownHandle(w http.ResponseWriter, r *http.Request) {
+func cmdHandle(w http.ResponseWriter, r *http.Request) {
 	app := r.Context().Value("app").(*App)
 
-	if app.TaskID == StrToInt(chi.URLParam(r, "TaskID")) {
-		app.Exit <- 0
+	var (
+		response CmdData
+		cmd      *CmdData
+		err      error
+	)
+
+	if cmd, err = ProcessCmd(uint32(app.TaskID), r.Body); err != nil {
+		response.Error = err.Error()
+	} else {
+		switch cmd.Cmd {
+		case CmdShutdown:
+			Shutdown(app)
+		}
 	}
+	w.Write(ResponseCmd(&response))
 }
 
 func NewServer(app *App) (*Server, error) {
@@ -45,12 +52,12 @@ func NewServer(app *App) (*Server, error) {
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := context.WithValue(r.Context(), "app", app)
+			app.Latest = time.Now()
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	})
 
-	r.Get("/", defaultHandle)
-	r.Get("/shutdown/{TaskID}", shutdownHandle)
+	r.Post("/cmd", cmdHandle)
 
 	startServer := func() {
 		ch <- http.ListenAndServe(fmt.Sprintf(":%d", port), r)

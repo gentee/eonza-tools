@@ -26,16 +26,3 @@ func GetFreePort(port int) (int, error) {
 	}
 	return port, nil
 }
-
-/*
-func LocalGet(port int, url string) (body []byte, err error) {
-	var (
-		res *http.Response
-	)
-	res, err = http.Get(fmt.Sprintf(`http://localhost:%d/%s`, port, url))
-	if err == nil {
-		body, err = io.ReadAll(res.Body)
-		res.Body.Close()
-	}
-	return
-}*/

@@ -8,15 +8,17 @@ import (
 	"encoding/gob"
 	"flag"
 	"log"
+	"os"
+	"time"
 )
 
 type App struct {
 	TaskID   int
 	TaskPort int
-	Port     int
 	Server   *Server
 
-	Exit chan int
+	Latest time.Time
+	Exit   chan int
 }
 
 func NewApp() *App {
@@ -28,6 +30,7 @@ func NewApp() *App {
 	app := App{
 		TaskID:   *taskFlag,
 		TaskPort: *portFlag,
+		Latest:   time.Now(),
 		Exit:     make(chan int),
 	}
 	log.SetFlags(0)
@@ -47,10 +50,30 @@ func NewApp() *App {
 	if _, err := SendCmd(app.TaskPort, &CmdData{
 		Cmd:    CmdStart,
 		TaskID: uint32(app.TaskID),
-		Value:  app.Port,
+		Value:  app.Server.Port,
 	}); err != nil {
 		log.Fatal(err)
 	}
-
+	go pingTask(&app)
 	return &app
+}
+
+func pingTask(app *App) {
+	latest := time.Now()
+	for {
+		time.Sleep(5 * time.Minute)
+		if latest.After(app.Latest) {
+			if _, err := SendCmd(app.TaskPort, &CmdData{
+				Cmd:    CmdPing,
+				TaskID: uint32(app.TaskID),
+			}); err != nil {
+				Shutdown(app)
+			}
+		}
+		latest = time.Now()
+	}
+}
+
+func Shutdown(app *App) {
+	os.Exit(0)
 }

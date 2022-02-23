@@ -5,7 +5,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"internal/app"
@@ -13,7 +12,6 @@ import (
 
 func main() {
 	app := app.NewApp()
-	fmt.Println(app, app.Server)
 
 	os.Exit(<-app.Exit)
 }

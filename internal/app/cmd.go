@@ -21,7 +21,9 @@ type CmdData struct {
 }
 
 const (
-	CmdStart = "start"
+	CmdStart    = "start"
+	CmdPing     = "ping"
+	CmdShutdown = "shutdown"
 )
 
 func SendCmd(port int, cmd *CmdData) (ret *CmdData, err error) {
@@ -64,4 +66,17 @@ func ProcessCmd(taskid uint32, r io.Reader) (ret *CmdData, err error) {
 		}
 	}
 	return
+}
+
+func ResponseCmd(cmd *CmdData) []byte {
+	var data bytes.Buffer
+
+	enc := gob.NewEncoder(&data)
+	if err := enc.Encode(cmd); err != nil {
+		enc.Encode(CmdData{
+			TaskID: cmd.TaskID,
+			Error:  err.Error(),
+		})
+	}
+	return data.Bytes()
 }
