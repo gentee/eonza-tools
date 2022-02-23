@@ -6,9 +6,7 @@ package app
 
 import (
 	"fmt"
-	"io"
 	"net"
-	"net/http"
 )
 
 const PortsPool = 1000
@@ -29,6 +27,7 @@ func GetFreePort(port int) (int, error) {
 	return port, nil
 }
 
+/*
 func LocalGet(port int, url string) (body []byte, err error) {
 	var (
 		res *http.Response
@@ -39,4 +38,4 @@ func LocalGet(port int, url string) (body []byte, err error) {
 		res.Body.Close()
 	}
 	return
-}
+}*/

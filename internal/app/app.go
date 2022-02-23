@@ -5,8 +5,8 @@
 package app
 
 import (
+	"encoding/gob"
 	"flag"
-	"fmt"
 	"log"
 )
 
@@ -35,16 +35,21 @@ func NewApp() *App {
 		log.Fatal(`undefined task id or task port`)
 	}
 
+	gob.Register([]interface{}{})
+	gob.Register(map[string]interface{}{})
+
 	server, err := NewServer(&app)
 	if err != nil {
 		log.Fatal(err)
 	}
 	app.Server = server
 
-	if body, err := LocalGet(app.TaskPort, fmt.Sprintf("pkg/%d", app.Port)); err != nil {
+	if _, err := SendCmd(app.TaskPort, &CmdData{
+		Cmd:    CmdStart,
+		TaskID: uint32(app.TaskID),
+		Value:  app.Port,
+	}); err != nil {
 		log.Fatal(err)
-	} else if StrToInt(string(body)) != app.TaskID {
-		log.Fatal(fmt.Sprintf(`wrong task id %d`, app.TaskID))
 	}
 
 	return &app
