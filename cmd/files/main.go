@@ -10,8 +10,14 @@ import (
 	"internal/app"
 )
 
+var cmds = map[string]app.CmdHandle{
+	`emptydirs`: {EmptyDirs},
+}
+
 func main() {
-	app := app.NewApp()
+	app := app.NewApp(app.AppSettings{
+		cmds,
+	})
 
 	os.Exit(<-app.Exit)
 }

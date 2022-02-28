@@ -5,7 +5,9 @@
 package app
 
 import (
+	"bytes"
 	"context"
+	"encoding/gob"
 	"fmt"
 	"net/http"
 	"time"
@@ -33,8 +35,21 @@ func cmdHandle(w http.ResponseWriter, r *http.Request) {
 		switch cmd.Cmd {
 		case CmdShutdown:
 			Shutdown(app)
+		default:
+			if handle, ok := app.Settings.Handles[cmd.Cmd]; ok {
+				go func() {
+					result := handle.Func(CmdPar{Value: cmd.Value, Ch: app.Results, Unique: cmd.Unique})
+					result.Finished = true
+					result.Unique = cmd.Unique
+					app.Results <- result
+				}()
+			} else {
+				response.Error = fmt.Sprintf(`unknown cmd "%s"`, cmd.Cmd)
+			}
 		}
 	}
+	response.TaskID = uint32(app.TaskID)
+
 	w.Write(ResponseCmd(&response))
 }
 
@@ -62,6 +77,29 @@ func NewServer(app *App) (*Server, error) {
 	startServer := func() {
 		ch <- http.ListenAndServe(fmt.Sprintf(":%d", port), r)
 	}
+
+	go func() {
+		var data bytes.Buffer
+
+		for {
+			result := <-app.Results
+			data.Reset()
+			enc := gob.NewEncoder(&data)
+			answer := CmdData{
+				TaskID:   uint32(app.TaskID),
+				Unique:   result.Unique,
+				Value:    result.Value,
+				Finished: result.Finished,
+			}
+			if result.Error != nil {
+				answer.Error = result.Error.Error()
+			}
+			if err = enc.Encode(answer); err == nil {
+				http.Post(fmt.Sprintf("http://localhost:%d/cmdresult", app.TaskPort),
+					"application/octet-stream", &data)
+			}
+		}
+	}()
 
 start:
 	for {

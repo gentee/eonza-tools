@@ -8,20 +8,50 @@ import (
 	"encoding/gob"
 	"flag"
 	"log"
+	"math/rand"
 	"os"
 	"time"
 )
 
+type CmdPar struct {
+	Unique uint32
+	Ch     chan CmdResult
+	Value  interface{}
+}
+
+type CmdResult struct {
+	Error    error
+	Value    interface{}
+	Unique   uint32
+	Finished bool
+}
+
+type CmdFunc func(CmdPar) CmdResult
+
+type CmdHandle struct {
+	Func CmdFunc
+}
+
+type AppSettings struct {
+	Handles map[string]CmdHandle
+}
+
 type App struct {
 	TaskID   int
 	TaskPort int
+	Settings AppSettings
 	Server   *Server
 
-	Latest time.Time
-	Exit   chan int
+	Results chan CmdResult
+	Latest  time.Time
+	Exit    chan int
 }
 
-func NewApp() *App {
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
+func NewApp(settings AppSettings) *App {
 	taskFlag := flag.Int("t", 0, "task id")
 	portFlag := flag.Int("p", 0, "port of the task")
 
@@ -30,6 +60,8 @@ func NewApp() *App {
 	app := App{
 		TaskID:   *taskFlag,
 		TaskPort: *portFlag,
+		Settings: settings,
+		Results:  make(chan CmdResult, 7),
 		Latest:   time.Now(),
 		Exit:     make(chan int),
 	}
