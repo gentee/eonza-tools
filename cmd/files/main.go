@@ -12,6 +12,7 @@ import (
 
 var cmds = map[string]app.CmdHandle{
 	`emptydirs`: {EmptyDirs},
+	`dupfiles`:  {DupFiles},
 }
 
 func main() {
