@@ -10,6 +10,10 @@ import (
 	"internal/app"
 )
 
+const (
+	Version = "1.0.0"
+)
+
 var cmds = map[string]app.CmdHandle{
 	`emptydirs`: {EmptyDirs},
 	`dupfiles`:  {DupFiles},
