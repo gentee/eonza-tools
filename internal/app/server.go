@@ -95,8 +95,11 @@ func NewServer(app *App) (*Server, error) {
 				answer.Error = result.Error.Error()
 			}
 			if err = enc.Encode(answer); err == nil {
-				http.Post(fmt.Sprintf("http://localhost:%d/cmdresult", app.TaskPort),
+				resp, err := http.Post(fmt.Sprintf("http://localhost:%d/cmdresult", app.TaskPort),
 					"application/octet-stream", &data)
+				if err == nil {
+					resp.Body.Close()
+				}
 			}
 		}
 	}()
